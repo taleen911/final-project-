@@ -1,0 +1,28 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Show Docker Version
+        run: docker --version
+
+      - name: Build Application Images
+        run: |
+          cd app
+          docker compose build
+
+      - name: Deploy Application
+        run: |
+          cd app
+          docker compose down
+          docker compose up -d
