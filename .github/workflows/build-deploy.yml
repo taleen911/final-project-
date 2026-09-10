@@ -10,22 +10,18 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Debug Repository Structure
+      - name: Debug
         run: |
           pwd
           ls -la
           find . -maxdepth 3 -type d
 
-      - name: Build Application Images
-        working-directory: ./app
+      - name: Locate Compose File
         run: |
-          docker compose build
+          find . -name docker-compose.yaml
 
-      - name: Deploy Application
-        working-directory: ./app
+      - name: Build
         run: |
-          docker compose down
-          docker compose up -d
+          find
