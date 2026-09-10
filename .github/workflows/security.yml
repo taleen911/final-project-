@@ -1,0 +1,67 @@
+name: Build Deploy and Security Scan
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-and-scan:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build Application
+        run: |
+          cd app
+          docker compose build
+
+      - name: Deploy Application
+        run: |
+          cd app
+          docker compose down
+          docker compose up -d
+
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Bandit
+        run: pip install bandit
+
+      - name: Run Bandit
+        run: |
+          bandit -r app/backend
+
+      - name: Run Hadolint Backend
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: app/backend/Dockerfile
+
+      - name: Run Hadolint Frontend
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: app/frontend/Dockerfile
+
+      - name: Build Images For Trivy
+        run: |
+          docker build -t final-project-backend:scan ./app/backend
+          docker build -t final-project-frontend:scan ./app/frontend
+
+      - name: Trivy Backend Scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: final-project-backend:scan
+
+      - name: Trivy Frontend Scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
