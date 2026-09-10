@@ -13,16 +13,19 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Show Docker Version
-        run: docker --version
+      - name: Debug Repository Structure
+        run: |
+          pwd
+          ls -la
+          find . -maxdepth 3 -type d
 
       - name: Build Application Images
+        working-directory: ./app
         run: |
-          cd app
           docker compose build
 
       - name: Deploy Application
+        working-directory: ./app
         run: |
-          cd app
           docker compose down
           docker compose up -d
