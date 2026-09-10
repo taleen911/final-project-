@@ -14,13 +14,24 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: TruffleHog secret scan
-        uses: trufflesecurity/trufflehog@main
         with:
-          path: ./
-          extra_args: --results=verified,unknown
+          fetch-depth: 0
 
+      # TruffleHog
+      - name: TruffleHog Scan
+        run: |
+          docker run --rm \
+            -v "$PWD:/pwd" \
+            trufflesecurity/trufflehog:latest filesystem /pwd \
+            --json > trufflehog-report.json || true
+
+      - name: Upload TruffleHog Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trufflehog-report
+          path: trufflehog-report.json
+
+      # Bandit
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -32,21 +43,73 @@ jobs:
 
       - name: Run Bandit
         run: |
-          bandit -r ./app/backend || true
+          bandit -r ./app/backend \
+          -f json \
+          -o bandit-report.json || true
 
+      - name: Upload Bandit Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit-report.json
+
+      # Hadolint
       - name: Download Hadolint
         run: |
           wget -q -O hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
           chmod +x hadolint
 
-      - name: Scan Backend Dockerfile
+      - name: Run Hadolint Backend
         run: |
-          ./hadolint app/backend/Dockerfile || true
+          ./hadolint app/backend/Dockerfile --format json > hadolint-backend.json || true
 
-      - name: Scan Frontend Dockerfile
+      - name: Run Hadolint Frontend
         run: |
-          ./hadolint app/frontend/Dockerfile || true
+          ./hadolint app/frontend/Dockerfile --format json > hadolint-frontend.json || true
 
-      - name: Scan DB Dockerfile
+      - name: Run Hadolint DB
         run: |
-          ./hadolint app/db/Dockerfile || true
+          ./hadolint app/db/Dockerfile --format json > hadolint-db.json || true
+
+      - name: Upload Hadolint Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: hadolint-reports
+          path: |
+            hadolint-backend.json
+            hadolint-frontend.json
+            hadolint-db.json
+
+      # Build Images
+      - name: Build Backend Image
+        run: |
+          docker build -t final-project-backend:scan ./app/backend
+
+      - name: Build Frontend Image
+        run: |
+          docker build -t final-project-frontend:scan ./app/frontend
+
+      # Trivy
+      - name: Trivy Backend Scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: final-project-backend:scan
+          format: json
+          output: trivy-backend-report.json
+
+      - name: Trivy Frontend Scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: final-project-frontend:scan
+          format: json
+          output: trivy-frontend-report.json
+
+      - name: Upload Trivy Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-reports
+          path: |
+            trivy-backend-report.json
+            trivy-frontend-report.json
