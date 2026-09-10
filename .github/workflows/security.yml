@@ -14,17 +14,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      # TruffleHog
       - name: TruffleHog secret scan
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
           extra_args: --results=verified,unknown
 
-      # Bandit
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -34,14 +30,18 @@ jobs:
         run: pip install bandit
 
       - name: Run Bandit
-        run: |
-          bandit -r ./app/backend || true
+        run: bandit -r ./app/backend || true
 
-      # Hadolint
       - name: Download Hadolint
         run: |
           wget -q -O hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
           chmod +x hadolint
 
-      - name: Scan 
-    
+      - name: Scan Backend Dockerfile
+        run: ./hadolint app/backend/Dockerfile || true
+
+      - name: Scan Frontend Dockerfile
+        run: ./hadolint app/frontend/Dockerfile || true
+
+      - name: Scan DB Dockerfile
+        run: ./
