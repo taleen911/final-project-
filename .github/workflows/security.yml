@@ -15,12 +15,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # TruffleHog
       - name: TruffleHog secret scan
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
           extra_args: --results=verified,unknown
 
+      # Bandit
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -30,18 +32,51 @@ jobs:
         run: pip install bandit
 
       - name: Run Bandit
-        run: bandit -r ./app/backend || true
+        run: |
+          bandit -r ./app/backend || true
 
+      # Hadolint
       - name: Download Hadolint
         run: |
           wget -q -O hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
           chmod +x hadolint
 
       - name: Scan Backend Dockerfile
-        run: ./hadolint app/backend/Dockerfile || true
+        run: |
+          ./hadolint app/backend/Dockerfile || true
 
       - name: Scan Frontend Dockerfile
-        run: ./hadolint app/frontend/Dockerfile || true
+        run: |
+          ./hadolint app/frontend/Dockerfile || true
 
       - name: Scan DB Dockerfile
-        run: ./
+        run: |
+          ./hadolint app/db/Dockerfile || true
+
+      # Build Images
+      - name: Build Backend Image
+        run: |
+          docker build -t final-project-backend:scan ./app/backend
+
+      - name: Build Frontend Image
+        run: |
+          docker build -t final-project-frontend:scan ./app/frontend
+
+      # Trivy
+      - name: Scan Backend Image with Trivy
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: final-project-backend:scan
+          format: table
+          exit-code: "0"
+          severity: "CRITICAL,HIGH"
+
+      - name: Scan Frontend Image with Trivy
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: final-project-frontend:scan
+          format: table
+          exit-code: "0"
+          severity: "CRITICAL,HIGH"
