@@ -31,8 +31,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install Bandit
-        run: |
-          pip install bandit
+        run: pip install bandit
 
       - name: Run Bandit
         run: |
@@ -44,23 +43,5 @@ jobs:
           wget -q -O hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
           chmod +x hadolint
 
-      - name: Scan Backend Dockerfile
-        run: |
-          ./hadolint app/backend/Dockerfile || true
-
-      - name: Scan Frontend Dockerfile
-        run: |
-          ./hadolint app/frontend/Dockerfile || true
-
-      - name: Scan DB Dockerfile
-        run: |
-          ./hadolint app/db/Dockerfile || true
-
-      # Build Images
-      - name: Build Backend Image
-        run: |
-          docker build -t final-project-backend:scan ./app/backend
-
-      - name: Build Frontend Image
-        run: |
+      - name: Scan 
     
