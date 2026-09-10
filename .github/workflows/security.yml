@@ -1,67 +1,81 @@
-name: Build Deploy and Security Scan
+name: Security Scan
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
+  pull_request:
+  workflow_dispatch:
 
 jobs:
-  deploy-and-scan:
+  security-scan:
     runs-on: self-hosted
 
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Build Application
-        run: |
-          cd app
-          docker compose build
-
-      - name: Deploy Application
-        run: |
-          cd app
-          docker compose down
-          docker compose up -d
-
-      - name: Run TruffleHog
+      # TruffleHog
+      - name: TruffleHog secret scan
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
+          extra_args: --results=verified,unknown
 
-      - name: Setup Python
+      # Bandit
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
       - name: Install Bandit
-        run: pip install bandit
+        run: |
+          pip install bandit
 
       - name: Run Bandit
         run: |
-          bandit -r app/backend
+          bandit -r ./app/backend
 
-      - name: Run Hadolint Backend
-        uses: hadolint/hadolint-action@v3.1.0
-        with:
-          dockerfile: app/backend/Dockerfile
+      # Hadolint
+      - name: Install Hadolint
+        run: |
+          wget -O hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
+          chmod +x hadolint
+          sudo mv hadolint /usr/local/bin/hadolint
 
-      - name: Run Hadolint Frontend
-        uses: hadolint/hadolint-action@v3.1.0
-        with:
-          dockerfile: app/frontend/Dockerfile
+      - name: Scan Backend Dockerfile
+        run: hadolint app/backend/Dockerfile
 
-      - name: Build Images For Trivy
+      - name: Scan Frontend Dockerfile
+        run: hadolint app/frontend/Dockerfile
+
+      - name: Scan DB Dockerfile
+        run: hadolint app/db/Dockerfile
+
+      # Trivy
+      - name: Build Backend Image
         run: |
           docker build -t final-project-backend:scan ./app/backend
+
+      - name: Build Frontend Image
+        run: |
           docker build -t final-project-frontend:scan ./app/frontend
 
-      - name: Trivy Backend Scan
+      - name: Scan Backend Image with Trivy
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: image
           image-ref: final-project-backend:scan
+          format: table
+          exit-code: "0"
+          severity: "CRITICAL,HIGH"
 
-      - name: Trivy Frontend Scan
+      - name: Scan Frontend Image with Trivy
         uses: aquasecurity/trivy-action@v0.36.0
         with:
+          scan-type: image
+          image-ref: final-project-frontend:scan
+          format: table
+          exit-code: "0"
+          severity: "CRITICAL,HIGH"
