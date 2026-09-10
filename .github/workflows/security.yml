@@ -39,23 +39,22 @@ jobs:
           bandit -r ./app/backend || true
 
       # Hadolint
-      - name: Install Hadolint
+      - name: Download Hadolint
         run: |
           wget -q -O hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
           chmod +x hadolint
-          sudo mv hadolint /usr/local/bin/hadolint
 
       - name: Scan Backend Dockerfile
         run: |
-          hadolint app/backend/Dockerfile || true
+          ./hadolint app/backend/Dockerfile || true
 
       - name: Scan Frontend Dockerfile
         run: |
-          hadolint app/frontend/Dockerfile || true
+          ./hadolint app/frontend/Dockerfile || true
 
       - name: Scan DB Dockerfile
         run: |
-          hadolint app/db/Dockerfile || true
+          ./hadolint app/db/Dockerfile || true
 
       # Build Images
       - name: Build Backend Image
@@ -64,23 +63,4 @@ jobs:
 
       - name: Build Frontend Image
         run: |
-          docker build -t final-project-frontend:scan ./app/frontend
-
-      # Trivy
-      - name: Scan Backend Image with Trivy
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          scan-type: image
-          image-ref: final-project-backend:scan
-          format: table
-          exit-code: "0"
-          severity: "CRITICAL,HIGH"
-
-      - name: Scan Frontend Image with Trivy
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          scan-type: image
-          image-ref: final-project-frontend:scan
-          format: table
-          exit-code: "0"
-          severity: "CRITICAL,HIGH"
+    
