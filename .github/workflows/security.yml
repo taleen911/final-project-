@@ -32,7 +32,7 @@ jobs:
           path: trufflehog-report.json
 
       # Bandit
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -44,8 +44,8 @@ jobs:
       - name: Run Bandit
         run: |
           bandit -r ./app/backend \
-          -f json \
-          -o bandit-report.json || true
+            -f json \
+            -o bandit-report.json || true
 
       - name: Upload Bandit Report
         uses: actions/upload-artifact@v4
@@ -56,57 +56,4 @@ jobs:
       # Hadolint
       - name: Download Hadolint
         run: |
-          wget -q -O hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
-          chmod +x hadolint
-
-      - name: Run Hadolint Backend
-        run: |
-          ./hadolint app/backend/Dockerfile --format json > hadolint-backend.json || true
-
-      - name: Run Hadolint Frontend
-        run: |
-          ./hadolint app/frontend/Dockerfile --format json > hadolint-frontend.json || true
-
-      - name: Run Hadolint DB
-        run: |
-          ./hadolint app/db/Dockerfile --format json > hadolint-db.json || true
-
-      - name: Upload Hadolint Reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: hadolint-reports
-          path: |
-            hadolint-backend.json
-            hadolint-frontend.json
-            hadolint-db.json
-
-      # Build Images
-      - name: Build Docker Images
-        run: |
-          cd app
-          docker compose build
-
-      # Trivy
-      - name: Trivy Backend Scan
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          scan-type: image
-          image-ref: app-backend:latest
-          format: json
-          output: trivy-backend-report.json
-
-      - name: Trivy Frontend Scan
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          scan-type: image
-          image-ref: app-frontend:latest
-          format: json
-          output: trivy-frontend-report.json
-
-      - name: Upload Trivy Reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: trivy-reports
-          path: |
-            trivy-backend-report.json
-            trivy-frontend-report.json
+          wget -q -O hadolint https://github.
